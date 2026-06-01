@@ -257,7 +257,42 @@ async function cargarAuditoria() {
 function totalPorOperador(usuario) {
   return votantes.filter((v) => v.registrado_por === usuario).length
 }
+function exportarRespaldoCompleto() {
+  const hojaVotantes = XLSX.utils.json_to_sheet(
+    votantes.map((v) => ({
+      Cedula: v.cedula,
+      Nombre: v.nombre_completo,
+      Local: v.locales?.nombre,
+      RegistradoPor: v.registrado_por,
+      FechaHora: new Date(v.fecha_hora).toLocaleString(),
+    }))
+  )
 
+  const hojaUsuarios = XLSX.utils.json_to_sheet(
+    usuarios.map((u) => ({
+      Nombre: u.nombre,
+      Usuario: u.usuario,
+      Rol: u.rol,
+      LocalAsignado: u.locales?.nombre || 'Sin local',
+    }))
+  )
+
+  const hojaAuditoria = XLSX.utils.json_to_sheet(
+    auditoria.map((a) => ({
+      FechaHora: new Date(a.fecha_hora).toLocaleString(),
+      Usuario: a.usuario,
+      Accion: a.accion,
+    }))
+  )
+
+  const libro = XLSX.utils.book_new()
+
+  XLSX.utils.book_append_sheet(libro, hojaVotantes, 'Votantes')
+  XLSX.utils.book_append_sheet(libro, hojaUsuarios, 'Usuarios')
+  XLSX.utils.book_append_sheet(libro, hojaAuditoria, 'Auditoria')
+
+  XLSX.writeFile(libro, 'respaldo_completo.xlsx')
+}
   return (
     <main className="container">
       <h1>Control Equipo Emilio Roa</h1>
@@ -276,6 +311,11 @@ function totalPorOperador(usuario) {
   <p>Locales activos: <strong>{locales.length}</strong></p>
   <p>Usuarios del sistema: <strong>{usuarios.length}</strong></p>
   <p>Registros hoy: <strong>
+    {usuarioActual?.rol?.trim() === 'administrador' && (
+  <button onClick={exportarRespaldoCompleto}>
+    💾 Respaldo completo
+  </button>
+)}
     {
       votantes.filter((v) => {
         const hoy = new Date().toLocaleDateString()
