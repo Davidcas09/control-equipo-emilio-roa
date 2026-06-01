@@ -13,6 +13,7 @@ function App() {
   const [mensaje, setMensaje] = useState('')
   const [usuario, setUsuario] = useState('')
   const [password, setPassword] = useState('')
+  const [usuarioActual, setUsuarioActual] = useState(null)
   const [logueado, setLogueado] = useState(() => {
   return localStorage.getItem('logueado') === 'true'
 })
@@ -21,7 +22,13 @@ function App() {
     cargarLocales()
     cargarVotantes()
   }, [])
+useEffect(() => {
+  const usuarioGuardado = localStorage.getItem('usuarioActual')
 
+  if (usuarioGuardado) {
+    setUsuarioActual(JSON.parse(usuarioGuardado))
+  }
+}, [])
   async function cargarLocales() {
     const { data } = await supabase.from('locales').select('*').order('id')
     setLocales(data || [])
@@ -50,6 +57,9 @@ function App() {
       alert('Usuario o contraseña incorrectos')
       return
     }
+
+    setUsuarioActual(data)
+    localStorage.setItem('usuarioActual', JSON.stringify(data))
 
     setLogueado(true)
     localStorage.setItem('logueado', 'true')
@@ -163,11 +173,17 @@ function App() {
     <main className="container">
       <h1>Control Equipo Emilio Roa</h1>
       <p className="subtitulo">Lista 2A · Opción 6</p>
-
+{usuarioActual && (
+  <p className="subtitulo">
+    Usuario: {usuarioActual.usuario} · Rol: {usuarioActual.rol}
+  </p>
+)}
       <button
   onClick={() => {
     setLogueado(false)
     localStorage.removeItem('logueado')
+    localStorage.removeItem('usuarioActual')
+    setUsuarioActual(null)
   }}
 >
   Cerrar sesión
