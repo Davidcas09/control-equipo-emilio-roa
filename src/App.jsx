@@ -20,6 +20,7 @@ function App() {
   const [nuevoPassword, setNuevoPassword] = useState('')
   const [nuevoRol, setNuevoRol] = useState('operador')
   const [nuevoLocalId, setNuevoLocalId] = useState('')
+  const [auditoria, setAuditoria] = useState([])
   const [logueado, setLogueado] = useState(() => {
   return localStorage.getItem('logueado') === 'true'
 })
@@ -28,6 +29,7 @@ function App() {
     cargarLocales()
     cargarVotantes()
     cargarUsuarios()
+    cargarAuditoria()
   }, [])
 useEffect(() => {
   const usuarioGuardado = localStorage.getItem('usuarioActual')
@@ -240,11 +242,49 @@ async function crearUsuario(e) {
   setNuevoLocalId('')
 
   cargarUsuarios()
+  cargarAuditoria()
 }
+async function cargarAuditoria() {
+  const { data, error } = await supabase
+    .from('auditoria')
+    .select('*')
+    .order('id', { ascending: false })
+
+  if (!error) {
+    setAuditoria(data)
+  }
+}
+function totalPorOperador(usuario) {
+  return votantes.filter((v) => v.registrado_por === usuario).length
+}
+
   return (
     <main className="container">
       <h1>Control Equipo Emilio Roa</h1>
-      <p className="subtitulo">Lista 2A · Opción 6</p>
+      <p className="subtitulo">
+        Lista 2A · Opción 6
+        </p>
+       {usuarioActual && (
+  <p className="subtitulo">
+    Usuario: {usuarioActual.usuario} · Rol: {usuarioActual.rol}
+  </p>
+)}
+      <section className="card">
+  <h2>Resumen general</h2>
+
+  <p>Total votantes: <strong>{votantes.length}</strong></p>
+  <p>Locales activos: <strong>{locales.length}</strong></p>
+  <p>Usuarios del sistema: <strong>{usuarios.length}</strong></p>
+  <p>Registros hoy: <strong>
+    {
+      votantes.filter((v) => {
+        const hoy = new Date().toLocaleDateString()
+        const fecha = new Date(v.fecha_hora).toLocaleDateString()
+        return hoy === fecha
+      }).length
+    }
+  </strong></p>
+</section>
 {usuarioActual && (
   <p className="subtitulo">
     Usuario: {usuarioActual.usuario} · Rol: {usuarioActual.rol}
@@ -414,7 +454,44 @@ async function crearUsuario(e) {
       </tbody>
     </table>
   </section>
+  )}
+
+  {usuarioActual?.rol?.trim() === 'administrador' && (
+  <section className="card">
+    <h2>Registros por operador</h2>
+
+    {usuarios.map((u) => (
+      <p key={u.id}>
+        {u.usuario}: <strong>{totalPorOperador(u.usuario)}</strong>
+      </p>
+    ))}
+  </section>
 )}
+  {usuarioActual?.rol?.trim() === 'administrador' && (
+  <section className="card">
+    <h2>Historial de actividades</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha/Hora</th>
+          <th>Usuario</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {auditoria.map((a) => (
+          <tr key={a.id}>
+            <td>{new Date(a.fecha_hora).toLocaleString()}</td>
+            <td>{a.usuario}</td>
+            <td>{a.accion}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </section>
+  )}
     </main>
   )
 }
