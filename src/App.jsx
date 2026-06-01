@@ -13,7 +13,9 @@ function App() {
   const [mensaje, setMensaje] = useState('')
   const [usuario, setUsuario] = useState('')
   const [password, setPassword] = useState('')
-  const [logueado, setLogueado] = useState(false)
+  const [logueado, setLogueado] = useState(() => {
+  return localStorage.getItem('logueado') === 'true'
+})
 
   useEffect(() => {
     cargarLocales()
@@ -50,6 +52,7 @@ function App() {
     }
 
     setLogueado(true)
+    localStorage.setItem('logueado', 'true')
   }
 
   async function registrarVotante(e) {
@@ -161,7 +164,14 @@ function App() {
       <h1>Control Equipo Emilio Roa</h1>
       <p className="subtitulo">Lista 2A · Opción 6</p>
 
-      <button onClick={() => setLogueado(false)}>Cerrar sesión</button>
+      <button
+  onClick={() => {
+    setLogueado(false)
+    localStorage.removeItem('logueado')
+  }}
+>
+  Cerrar sesión
+</button>
 
       <form onSubmit={registrarVotante} className="card">
         <input
