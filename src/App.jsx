@@ -14,6 +14,12 @@ function App() {
   const [usuario, setUsuario] = useState('')
   const [password, setPassword] = useState('')
   const [usuarioActual, setUsuarioActual] = useState(null)
+  const [usuarios, setUsuarios] = useState([])
+  const [nuevoNombre, setNuevoNombre] = useState('')
+  const [nuevoUsuario, setNuevoUsuario] = useState('')
+  const [nuevoPassword, setNuevoPassword] = useState('')
+  const [nuevoRol, setNuevoRol] = useState('operador')
+  const [nuevoLocalId, setNuevoLocalId] = useState('')
   const [logueado, setLogueado] = useState(() => {
   return localStorage.getItem('logueado') === 'true'
 })
@@ -21,6 +27,7 @@ function App() {
   useEffect(() => {
     cargarLocales()
     cargarVotantes()
+    cargarUsuarios()
   }, [])
 useEffect(() => {
   const usuarioGuardado = localStorage.getItem('usuarioActual')
@@ -37,12 +44,21 @@ useEffect(() => {
   async function cargarVotantes() {
     const { data } = await supabase
       .from('votantes')
-      .select('id, cedula, nombre_completo, fecha_hora, locales(nombre)')
+      .select('id, cedula, nombre_completo, fecha_hora, registrado_por, locales(nombre)')
       .order('id', { ascending: false })
 
     setVotantes(data || [])
   }
+async function cargarUsuarios() {
+  const { data, error } = await supabase
+    .from('usuarios')
+    .select('id, nombre, usuario, rol, local_id, locales(nombre)')
+    .order('id')
 
+  if (!error) {
+    setUsuarios(data)
+  }
+}
   async function iniciarSesion(e) {
     e.preventDefault()
 
@@ -60,7 +76,9 @@ useEffect(() => {
 
     setUsuarioActual(data)
     localStorage.setItem('usuarioActual', JSON.stringify(data))
-
+if (data.local_id) {
+  setLocalId(String(data.local_id))
+}
     setLogueado(true)
     localStorage.setItem('logueado', 'true')
   }
@@ -81,12 +99,13 @@ useEffect(() => {
     }
 
     const { error } = await supabase.from('votantes').insert([
-      {
-        cedula,
-        nombre_completo: nombre,
-        local_id: Number(localId),
-      },
-    ])
+  {
+    cedula,
+    nombre_completo: nombre,
+    local_id: Number(localId),
+    registrado_por: usuarioActual?.usuario,
+  }
+])
 
     if (error) {
       setMensaje('❌ Error al guardar: ' + error.message)
@@ -94,6 +113,16 @@ useEffect(() => {
     }
 
     setMensaje('✅ Registro guardado correctamente')
+  const { error: errorAuditoria } = await supabase.from('auditoria').insert([
+  {
+    usuario: usuarioActual?.usuario,
+    accion: `Registró votante ${nombre} (${cedula})`,
+  },
+])
+
+if (errorAuditoria) {
+  console.error('Error auditoria:', errorAuditoria)
+}
     setCedula('')
     setNombre('')
     setLocalId('')
@@ -101,18 +130,28 @@ useEffect(() => {
   }
 
   async function eliminarVotante(id) {
-    const confirmar = window.confirm('¿Seguro que quieres eliminar este registro?')
-    if (!confirmar) return
+  const confirmar = window.confirm('¿Seguro que quieres eliminar este registro?')
+  if (!confirmar) return
 
-    const { error } = await supabase.from('votantes').delete().eq('id', id)
+  const { error } = await supabase
+    .from('votantes')
+    .delete()
+    .eq('id', id)
 
-    if (error) {
-      alert('Error al eliminar: ' + error.message)
-      return
-    }
-
-    cargarVotantes()
+  if (error) {
+    alert('Error al eliminar: ' + error.message)
+    return
   }
+
+  await supabase.from('auditoria').insert([
+    {
+      usuario: usuarioActual?.usuario,
+      accion: `Eliminó votante ID ${id}`,
+    },
+  ])
+
+  cargarVotantes()
+}
 
   function exportarExcel() {
     const datos = votantes.map((v) => ({
@@ -168,7 +207,40 @@ useEffect(() => {
       </div>
     )
   }
+async function crearUsuario(e) {
+  e.preventDefault()
 
+  const { error } = await supabase.from('usuarios').insert([
+    {
+      nombre: nuevoNombre,
+      usuario: nuevoUsuario,
+      password: nuevoPassword,
+      rol: nuevoRol,
+      local_id: nuevoLocalId ? Number(nuevoLocalId) : null,
+    },
+  ])
+
+  if (error) {
+    alert('Error al crear usuario: ' + error.message)
+    return
+  }
+
+  alert('Usuario creado correctamente')
+  await supabase.from('auditoria').insert([
+  {
+    usuario: usuarioActual?.usuario,
+    accion: `Creó usuario ${nuevoUsuario}`,
+  },
+])
+
+  setNuevoNombre('')
+  setNuevoUsuario('')
+  setNuevoPassword('')
+  setNuevoRol('operador')
+  setNuevoLocalId('')
+
+  cargarUsuarios()
+}
   return (
     <main className="container">
       <h1>Control Equipo Emilio Roa</h1>
@@ -176,6 +248,7 @@ useEffect(() => {
 {usuarioActual && (
   <p className="subtitulo">
     Usuario: {usuarioActual.usuario} · Rol: {usuarioActual.rol}
+
   </p>
 )}
       <button
@@ -204,14 +277,19 @@ useEffect(() => {
           required
         />
 
-        <select value={localId} onChange={(e) => setLocalId(e.target.value)} required>
-          <option value="">Seleccionar local</option>
-          {locales.map((local) => (
-            <option key={local.id} value={local.id}>
-              {local.nombre}
-            </option>
-          ))}
-        </select>
+        <select
+  value={localId}
+  onChange={(e) => setLocalId(e.target.value)}
+  required
+  disabled={usuarioActual?.rol?.trim() === 'operador'}
+>
+  <option value="">Seleccionar local</option>
+  {locales.map((local) => (
+    <option key={local.id} value={local.id}>
+      {local.nombre}
+    </option>
+  ))}
+</select>
 
         <button type="submit">Registrar</button>
         {mensaje && <p className="mensaje">{mensaje}</p>}
@@ -220,7 +298,11 @@ useEffect(() => {
       <section className="card">
         <h2>Total registrados: {votantes.length}</h2>
 
-        <button onClick={exportarExcel}>📊 Exportar Excel</button>
+       {usuarioActual && usuarioActual.rol?.trim() === 'administrador' && (
+         <button onClick={exportarExcel}>
+  📊 Exportar Excel
+</button>
+        )}
 
         <h3>Totales por local</h3>
         {locales.map((local) => (
@@ -243,6 +325,7 @@ useEffect(() => {
               <th>Cédula</th>
               <th>Nombre</th>
               <th>Local</th>
+              <th>Registrado por</th>
               <th>Fecha/Hora</th>
               <th>Acción</th>
             </tr>
@@ -254,17 +337,84 @@ useEffect(() => {
                 <td>{v.cedula}</td>
                 <td>{v.nombre_completo}</td>
                 <td>{v.locales?.nombre}</td>
+                <td>{v.registrado_por}</td>
                 <td>{new Date(v.fecha_hora).toLocaleString()}</td>
                 <td>
-                  <button onClick={() => eliminarVotante(v.id)}>
+                   {usuarioActual?.rol === 'administrador' ? (
+                    <button onClick={() => eliminarVotante(v.id)}>
                     🗑️ Eliminar
-                  </button>
-                </td>
+                    </button>
+                ) : null}
+              </td>
               </tr>
             ))}
           </tbody>
         </table>
       </section>
+      {usuarioActual?.rol?.trim() === 'administrador' && (
+  <section className="card">
+    <h2>Usuarios del sistema</h2>
+<form onSubmit={crearUsuario} className="card">
+  <input
+    placeholder="Nombre"
+    value={nuevoNombre}
+    onChange={(e) => setNuevoNombre(e.target.value)}
+    required
+  />
+
+  <input
+    placeholder="Usuario"
+    value={nuevoUsuario}
+    onChange={(e) => setNuevoUsuario(e.target.value)}
+    required
+  />
+
+  <input
+    placeholder="Contraseña"
+    value={nuevoPassword}
+    onChange={(e) => setNuevoPassword(e.target.value)}
+    required
+  />
+
+  <select value={nuevoRol} onChange={(e) => setNuevoRol(e.target.value)}>
+    <option value="operador">Operador</option>
+    <option value="administrador">Administrador</option>
+  </select>
+
+  <select value={nuevoLocalId} onChange={(e) => setNuevoLocalId(e.target.value)}>
+    <option value="">Sin local asignado</option>
+    {locales.map((local) => (
+      <option key={local.id} value={local.id}>
+        {local.nombre}
+      </option>
+    ))}
+  </select>
+
+  <button type="submit">Crear usuario</button>
+</form>
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Usuario</th>
+          <th>Rol</th>
+          <th>Local asignado</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {usuarios.map((u) => (
+          <tr key={u.id}>
+            <td>{u.nombre}</td>
+            <td>{u.usuario}</td>
+            <td>{u.rol}</td>
+            <td>{u.locales?.nombre || 'Sin local'}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </section>
+)}
     </main>
   )
 }
