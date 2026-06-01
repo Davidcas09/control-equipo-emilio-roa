@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import './App.css'
 import * as XLSX from 'xlsx'
+
 function App() {
   const [locales, setLocales] = useState([])
   const [votantes, setVotantes] = useState([])
@@ -10,6 +11,9 @@ function App() {
   const [localId, setLocalId] = useState('')
   const [busqueda, setBusqueda] = useState('')
   const [mensaje, setMensaje] = useState('')
+  const [usuario, setUsuario] = useState('')
+  const [password, setPassword] = useState('')
+  const [logueado, setLogueado] = useState(false)
 
   useEffect(() => {
     cargarLocales()
@@ -28,6 +32,24 @@ function App() {
       .order('id', { ascending: false })
 
     setVotantes(data || [])
+  }
+
+  async function iniciarSesion(e) {
+    e.preventDefault()
+
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('*')
+      .eq('usuario', usuario)
+      .eq('password', password)
+      .single()
+
+    if (error || !data) {
+      alert('Usuario o contraseña incorrectos')
+      return
+    }
+
+    setLogueado(true)
   }
 
   async function registrarVotante(e) {
@@ -65,59 +87,103 @@ function App() {
     cargarVotantes()
   }
 
+  async function eliminarVotante(id) {
+    const confirmar = window.confirm('¿Seguro que quieres eliminar este registro?')
+    if (!confirmar) return
+
+    const { error } = await supabase.from('votantes').delete().eq('id', id)
+
+    if (error) {
+      alert('Error al eliminar: ' + error.message)
+      return
+    }
+
+    cargarVotantes()
+  }
+
+  function exportarExcel() {
+    const datos = votantes.map((v) => ({
+      Cedula: v.cedula,
+      Nombre: v.nombre_completo,
+      Local: v.locales?.nombre,
+      FechaHora: new Date(v.fecha_hora).toLocaleString(),
+    }))
+
+    const hoja = XLSX.utils.json_to_sheet(datos)
+    const libro = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(libro, hoja, 'Votantes')
+    XLSX.writeFile(libro, 'votantes.xlsx')
+  }
+
+  function totalPorLocal(localNombre) {
+    return votantes.filter((v) => v.locales?.nombre === localNombre).length
+  }
+
   const votantesFiltrados = votantes.filter((v) =>
     `${v.cedula} ${v.nombre_completo}`
       .toLowerCase()
       .includes(busqueda.toLowerCase())
   )
-function exportarExcel() {
-  const datos = votantes.map((v) => ({
-    Cedula: v.cedula,
-    Nombre: v.nombre_completo,
-    Local: v.locales?.nombre,
-    FechaHora: new Date(v.fecha_hora).toLocaleString(),
-  }))
 
-  const hoja = XLSX.utils.json_to_sheet(datos)
-  const libro = XLSX.utils.book_new()
+  if (!logueado) {
+    return (
+      <div className="container">
+        <div className="card">
+          <h1>Control Equipo Emilio Roa</h1>
+          <h2>Iniciar Sesión</h2>
 
-  XLSX.utils.book_append_sheet(libro, hoja, 'Votantes')
+          <form onSubmit={iniciarSesion}>
+            <input
+              type="text"
+              placeholder="Usuario"
+              value={usuario}
+              onChange={(e) => setUsuario(e.target.value)}
+              required
+            />
 
-  XLSX.writeFile(libro, 'votantes.xlsx')
-}
-  function totalPorLocal(localNombre) {
-    return votantes.filter((v) => v.locales?.nombre === localNombre).length
+            <input
+              type="password"
+              placeholder="Contraseña"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+
+            <button type="submit">Ingresar</button>
+          </form>
+        </div>
+      </div>
+    )
   }
-async function eliminarVotante(id) {
-  const confirmar = window.confirm('¿Seguro que quieres eliminar este registro?')
 
-  if (!confirmar) return
-
-  const { error } = await supabase
-    .from('votantes')
-    .delete()
-    .eq('id', id)
-
-  if (error) {
-    alert('Error al eliminar: ' + error.message)
-    return
-  }
-
-  cargarVotantes()
-}
   return (
     <main className="container">
       <h1>Control Equipo Emilio Roa</h1>
       <p className="subtitulo">Lista 2A · Opción 6</p>
 
+      <button onClick={() => setLogueado(false)}>Cerrar sesión</button>
+
       <form onSubmit={registrarVotante} className="card">
-        <input placeholder="Cédula de identidad" value={cedula} onChange={(e) => setCedula(e.target.value)} required />
-        <input placeholder="Nombre completo" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
+        <input
+          placeholder="Cédula de identidad"
+          value={cedula}
+          onChange={(e) => setCedula(e.target.value)}
+          required
+        />
+
+        <input
+          placeholder="Nombre completo"
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          required
+        />
 
         <select value={localId} onChange={(e) => setLocalId(e.target.value)} required>
           <option value="">Seleccionar local</option>
           {locales.map((local) => (
-            <option key={local.id} value={local.id}>{local.nombre}</option>
+            <option key={local.id} value={local.id}>
+              {local.nombre}
+            </option>
           ))}
         </select>
 
@@ -127,9 +193,9 @@ async function eliminarVotante(id) {
 
       <section className="card">
         <h2>Total registrados: {votantes.length}</h2>
-<button onClick={exportarExcel}>
-  📊 Exportar Excel
-</button>
+
+        <button onClick={exportarExcel}>📊 Exportar Excel</button>
+
         <h3>Totales por local</h3>
         {locales.map((local) => (
           <p key={local.id}>
@@ -155,6 +221,7 @@ async function eliminarVotante(id) {
               <th>Acción</th>
             </tr>
           </thead>
+
           <tbody>
             {votantesFiltrados.map((v) => (
               <tr key={v.id}>
@@ -163,10 +230,10 @@ async function eliminarVotante(id) {
                 <td>{v.locales?.nombre}</td>
                 <td>{new Date(v.fecha_hora).toLocaleString()}</td>
                 <td>
-  <button onClick={() => eliminarVotante(v.id)}>
-    🗑️ Eliminar
-  </button>
-</td>
+                  <button onClick={() => eliminarVotante(v.id)}>
+                    🗑️ Eliminar
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
