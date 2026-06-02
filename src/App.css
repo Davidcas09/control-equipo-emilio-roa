@@ -284,3 +284,53 @@ tr:nth-child(even) td {
   color:#666;
   font-size:18px;
 }
+body{
+  background:#f4f4f4;
+}
+
+.login-card{
+  max-width:500px;
+  margin:80px auto;
+  background:white;
+  padding:40px;
+  border-radius:20px;
+  text-align:center;
+  box-shadow:0 10px 30px rgba(0,0,0,.15);
+}
+
+.login-card h1{
+  color:#d40000;
+  margin-bottom:10px;
+}
+
+.login-card p{
+  color:#666;
+  margin-bottom:25px;
+}
+
+.login-card h2{
+  color:#d40000;
+  margin-bottom:20px;
+}
+
+.login-card form{
+  display:flex;
+  flex-direction:column;
+  gap:15px;
+}
+
+.login-card input{
+  padding:12px;
+  border:1px solid #ccc;
+  border-radius:8px;
+}
+
+.login-card button{
+  background:#d40000;
+  color:white;
+  border:none;
+  padding:12px;
+  border-radius:8px;
+  font-weight:bold;
+  cursor:pointer;
+}

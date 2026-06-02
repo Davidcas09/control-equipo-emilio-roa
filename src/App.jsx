@@ -198,32 +198,31 @@ if (errorAuditoria) {
 
   if (!logueado) {
     return (
-      <div className="container">
-        <div className="card">
-          <h1>Control Equipo Emilio Roa</h1>
-          <h2>Iniciar Sesión</h2>
+      <div className="login-card">
+  <h1>Control Equipo Emilio Roa</h1>
+  <p>Lista 2A - Opción 6</p>
 
-          <form onSubmit={iniciarSesion}>
-            <input
-              type="text"
-              placeholder="Usuario"
-              value={usuario}
-              onChange={(e) => setUsuario(e.target.value)}
-              required
-            />
+  <h2>Iniciar Sesión</h2>
 
-            <input
-              type="password"
-              placeholder="Contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+  <form onSubmit={iniciarSesion}>
+    <input
+      placeholder="Usuario"
+      value={usuario}
+      onChange={(e) => setUsuario(e.target.value)}
+    />
 
-            <button type="submit">Ingresar</button>
-          </form>
-        </div>
-      </div>
+    <input
+      type="password"
+      placeholder="Contraseña"
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
+    />
+
+    <button type="submit">
+      Ingresar
+    </button>
+  </form>
+</div>
     )
   }
 async function crearUsuario(e) {
