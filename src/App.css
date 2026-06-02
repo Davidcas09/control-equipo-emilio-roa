@@ -366,3 +366,22 @@ body{
   margin: 0 12px;
   vertical-align: middle;
 }
+.login-card {
+  max-width: 460px;
+}
+
+.login-card h1 {
+  font-size: 26px !important;
+  white-space: nowrap;
+}
+
+.login-card p {
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 25px;
+}
+
+.login-card h2 {
+  font-size: 22px;
+  color: #d40000;
+}
