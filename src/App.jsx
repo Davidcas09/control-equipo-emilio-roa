@@ -177,7 +177,9 @@ if (errorAuditoria) {
       Cedula: v.cedula,
       Nombre: v.nombre_completo,
       Local: v.locales?.nombre,
-      FechaHora: new Date(v.fecha_hora).toLocaleString(),
+      FechaHora: new Date(v.fecha_hora).toLocaleString('es-PY', {
+  timeZone: 'America/Asuncion'
+})
     }))
 
     const hoja = XLSX.utils.json_to_sheet(datos)
@@ -280,7 +282,9 @@ function exportarRespaldoCompleto() {
       Nombre: v.nombre_completo,
       Local: v.locales?.nombre,
       RegistradoPor: v.registrado_por,
-      FechaHora: new Date(v.fecha_hora).toLocaleString(),
+      FechaHora: new Date(v.fecha_hora).toLocaleString('es-PY', {
+  timeZone: 'America/Asuncion'
+})
     }))
   )
 
@@ -463,18 +467,24 @@ function exportarRespaldoCompleto() {
           <tbody>
             {votantesFiltrados.map((v) => (
               <tr key={v.id}>
-                <td>{v.cedula}</td>
+                 <td>{v.cedula}</td>
                 <td>{v.nombre_completo}</td>
                 <td>{v.locales?.nombre}</td>
                 <td>{v.registrado_por}</td>
-                <td>{new Date(v.fecha_hora).toLocaleString()}</td>
+
                 <td>
-                   {usuarioActual?.rol === 'administrador' ? (
-                    <button onClick={() => eliminarVotante(v.id)}>
-                    🗑️ Eliminar
-                    </button>
+                 {new Date(v.fecha_hora).toLocaleString('es-PY', {
+                  timeZone: 'America/Asuncion',
+                })}
+               </td>
+
+                <td>
+                {usuarioActual?.rol === 'administrador' ? (
+                  <button onClick={() => eliminarVotante(v.id)}>
+                     🗑️ Eliminar
+                 </button>
                 ) : null}
-              </td>
+               </td>
               </tr>
             ))}
           </tbody>
@@ -571,12 +581,18 @@ function exportarRespaldoCompleto() {
 
       <tbody>
         {auditoria.map((a) => (
-          <tr key={a.id}>
-            <td>{new Date(a.fecha_hora).toLocaleString()}</td>
-            <td>{a.usuario}</td>
-            <td>{a.accion}</td>
-          </tr>
-        ))}
+  <tr key={a.id}>
+    <td>
+      {new Date(a.fecha_hora).toLocaleString('es-PY', {
+        timeZone: 'America/Asuncion',
+      })}
+    </td>
+
+    <td>{a.usuario}</td>
+
+    <td>{a.accion}</td>
+  </tr>
+))}
       </tbody>
     </table>
   </section>
