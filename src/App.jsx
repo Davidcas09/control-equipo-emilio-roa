@@ -2,6 +2,15 @@ import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import './App.css'
 import * as XLSX from 'xlsx'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
+} from 'recharts'
 
 function App() {
   const [locales, setLocales] = useState([])
@@ -22,8 +31,16 @@ function App() {
   const [nuevoLocalId, setNuevoLocalId] = useState('')
   const [auditoria, setAuditoria] = useState([])
   const [logueado, setLogueado] = useState(() => {
+    
   return localStorage.getItem('logueado') === 'true'
 })
+
+const datosLocales = locales.map((local) => ({
+  nombre: local.nombre,
+  cantidad: votantes.filter(
+    (v) => v.locales?.nombre === local.nombre
+  ).length
+}))
 
   useEffect(() => {
     cargarLocales()
@@ -310,12 +327,9 @@ function exportarRespaldoCompleto() {
   <p>Total votantes: <strong>{votantes.length}</strong></p>
   <p>Locales activos: <strong>{locales.length}</strong></p>
   <p>Usuarios del sistema: <strong>{usuarios.length}</strong></p>
-  <p>Registros hoy: <strong>
-    {usuarioActual?.rol?.trim() === 'administrador' && (
-  <button onClick={exportarRespaldoCompleto}>
-    💾 Respaldo completo
-  </button>
-)}
+<p>
+  Registros hoy:{' '}
+  <strong>
     {
       votantes.filter((v) => {
         const hoy = new Date().toLocaleDateString()
@@ -323,8 +337,14 @@ function exportarRespaldoCompleto() {
         return hoy === fecha
       }).length
     }
-  </strong></p>
-</section>
+  </strong>
+</p>
+
+{usuarioActual?.rol?.trim() === 'administrador' && (
+  <button onClick={exportarRespaldoCompleto}>
+    💾 Respaldo completo
+  </button>
+)}
 {usuarioActual && (
   <p className="subtitulo">
     Usuario: {usuarioActual.usuario} · Rol: {usuarioActual.rol}
@@ -376,15 +396,45 @@ function exportarRespaldoCompleto() {
       </form>
 
       <section className="card">
-        <h2>Total registrados: {votantes.length}</h2>
+  <h2>Total registrados: {votantes.length}</h2>
 
-       {usuarioActual && usuarioActual.rol?.trim() === 'administrador' && (
-         <button onClick={exportarExcel}>
-  📊 Exportar Excel
-</button>
-        )}
+  <button onClick={exportarExcel}>
+    📊 Exportar Excel
+  </button>
 
-        <h3>Totales por local</h3>
+  <h3>Totales por local</h3>
+
+  {locales.map((local) => (
+    <p key={local.id}>
+      {local.nombre}: <strong>{totalPorLocal(local.nombre)}</strong>
+    </p>
+  ))}
+</section>
+
+<section className="card candidato-card">
+  <img
+    src="/emilio.png"
+    alt="Emilio Roa"
+    className="foto-candidato"
+  />
+
+  <h2>Emilio Roa</h2>
+<p>Lista 2A • Opción 6</p>
+</section>
+
+<section className="card">
+  <h2>📊 Votantes por local</h2>
+
+  <ResponsiveContainer width="100%" height={300}>
+    <BarChart data={datosLocales}>
+      <CartesianGrid strokeDasharray="3 3" />
+      <XAxis dataKey="nombre" />
+      <YAxis />
+      <Tooltip />
+      <Bar dataKey="cantidad" fill="#d40000" />
+    </BarChart>
+  </ResponsiveContainer>
+</section>
         {locales.map((local) => (
           <p key={local.id}>
             {local.nombre}: <strong>{totalPorLocal(local.nombre)}</strong>
