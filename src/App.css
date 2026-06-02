@@ -126,8 +126,10 @@ td {
 }
 
 h1 {
-  font-size: 42px;
-  text-align: center;
+  font-size: 3.5rem;
+  font-weight: 900;
+  color: white;
+  text-transform: uppercase;
 }
 
 h2 {
@@ -333,4 +335,34 @@ body{
   border-radius:8px;
   font-weight:bold;
   cursor:pointer;
+}
+.logo-login{
+  width:120px;
+  margin-bottom:15px;
+}
+.banner-politico {
+  text-align: center;
+  margin: 15px 0 25px;
+}
+
+.banner-politico h2 {
+  font-size: 3rem;
+  font-weight: 900;
+  color: #d40000;
+}
+
+.banner-politico p {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.banner-politico p::before,
+.banner-politico p::after {
+  content: "";
+  display: inline-block;
+  width: 80px;
+  height: 2px;
+  background: #d40000;
+  margin: 0 12px;
+  vertical-align: middle;
 }

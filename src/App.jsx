@@ -52,8 +52,13 @@ useEffect(() => {
   const usuarioGuardado = localStorage.getItem('usuarioActual')
 
   if (usuarioGuardado) {
-    setUsuarioActual(JSON.parse(usuarioGuardado))
+  const usuarioParseado = JSON.parse(usuarioGuardado)
+  setUsuarioActual(usuarioParseado)
+
+  if (usuarioParseado.local_id) {
+    setLocalId(String(usuarioParseado.local_id))
   }
+}
 }, [])
   async function cargarLocales() {
     const { data } = await supabase.from('locales').select('*').order('id')
@@ -316,22 +321,31 @@ function exportarRespaldoCompleto() {
   return (
     <main className="container">
       <h1>Control Equipo Emilio Roa</h1>
-      <p className="subtitulo">
-        Lista 2A · Opción 6
-        </p>
+      
        {usuarioActual && (
-  <p className="subtitulo">
-    Usuario: {usuarioActual.usuario} · Rol: {usuarioActual.rol}
-  </p>
-)}
+  <div className="banner-politico">
+  <h2>LISTA 2A · OPCIÓN 6</h2>
+  <p>EMILIO ROA CONCEJAL</p>
+</div>
+  )}
+  <button
+  onClick={() => {
+    setLogueado(false)
+    localStorage.removeItem('logueado')
+    localStorage.removeItem('usuarioActual')
+    setUsuarioActual(null)
+  }}
+>
+  Cerrar sesión
+</button>
+
       <section className="card">
-  <h2>Resumen general</h2>
+  <h2>📊 Resumen general</h2>
 
   <p>Total votantes: <strong>{votantes.length}</strong></p>
   <p>Locales activos: <strong>{locales.length}</strong></p>
   <p>Usuarios del sistema: <strong>{usuarios.length}</strong></p>
-<p>
-  Registros hoy:{' '}
+<p>  Registros hoy:{' '}
   <strong>
     {
       votantes.filter((v) => {
@@ -348,22 +362,7 @@ function exportarRespaldoCompleto() {
     💾 Respaldo completo
   </button>
 )}
-{usuarioActual && (
-  <p className="subtitulo">
-    Usuario: {usuarioActual.usuario} · Rol: {usuarioActual.rol}
-
-  </p>
-)}
-      <button
-  onClick={() => {
-    setLogueado(false)
-    localStorage.removeItem('logueado')
-    localStorage.removeItem('usuarioActual')
-    setUsuarioActual(null)
-  }}
->
-  Cerrar sesión
-</button>
+      
 
       <form onSubmit={registrarVotante} className="card">
         <input
@@ -405,7 +404,7 @@ function exportarRespaldoCompleto() {
     📊 Exportar Excel
   </button>
 
-  <h3>Totales por local</h3>
+  <h3>📍 Totales por local</h3>
 
   {locales.map((local) => (
     <p key={local.id}>
